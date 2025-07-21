@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Mercado dos Games</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.05) 2px,
+                rgba(255,255,255,0.05) 4px
+            );
+            animation: slide 20s linear infinite;
+        }
+
+        @keyframes slide {
+            0% { transform: translateX(-50px) translateY(-50px); }
+            100% { transform: translateX(0px) translateY(0px); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .kpi-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .kpi-label {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: scale(1.02);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 0 30px 30px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .table-content {
+            padding: 20px;
+        }
+
+        .table-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ecf0f1;
+            transition: background-color 0.3s ease;
+        }
+
+        .table-row:hover {
+            background-color: #f8f9fa;
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .platform-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .market-share {
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .trend-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .trend-up { background: #27ae60; }
+        .trend-down { background: #e74c3c; }
+        .trend-stable { background: #f39c12; }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        .loading {
+            opacity: 0;
+            animation: fadeIn 0.8s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard loading">
+        <div class="header">
+            <h1>🎮 Dashboard de Mercado dos Games</h1>
+            <p class="subtitle">Análise Completa do Setor Gaming 2024-2025</p>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-value" id="totalRevenue">$184.4B</div>
+                <div class="kpi-label">Receita Global</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="totalPlayers">3.2B</div>
+                <div class="kpi-label">Jogadores Mundiais</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="growthRate">+8.7%</div>
+                <div class="kpi-label">Crescimento Anual</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="mobileShare">52%</div>
+                <div class="kpi-label">Participação Mobile</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3 class="chart-title">Receita por Segmento (Bilhões USD)</h3>
+                <canvas id="revenueChart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">Distribuição por Plataforma</h3>
+                <canvas id="platformChart" width="300" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+            <div class="table-container">
+                <div class="table-header">Top 5 Mercados por Região</div>
+                <div class="table-content">
+                    <div class="table-row">
+                        <span class="platform-name">🇨🇳 China</span>
+                        <span class="market-share">$50.2B <span class="trend-indicator trend-up"></span></span>
+                    </div>
+                    <div class="table-row">
+                        <span class="platform-name">🇺🇸 Estados Unidos</span>
+                        <span class="market-share">$36.9B <span class="trend-indicator trend-up"></span></span>
+                    </div>
+                    <div class="table-row">
+                        <span class="platform-name">🇯🇵 Japão</span>
+                        <span class="market-share">$22.1B <span class="trend-indicator trend-stable"></span></span>
+                    </div>
+                    <div class="table-row">
+                        <span class="platform-name">🇩🇪 Alemanha</span>
+                        <span class="market-share">$6.8B <span class="trend-indicator trend-up"></span></span>
+                    </div>
+                    <div class="table-row">
+                        <span class="platform-name">🇬🇧 Reino Unido</span>
+                        <span class="market-share">$5.7B <span class="trend-indicator trend-up"></span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3 class="chart-title">Projeção de Crescimento</h3>
+                <canvas id="growthChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados do mercado de games
+        const gameMarketData = {
+            revenue: {
+                mobile: 95.4,
+                console: 53.2,
+                pc: 35.8
+            },
+            platforms: {
+                mobile: 52,
+                console: 29,
+                pc: 19
+            },
+            growth: [
+                { year: '2021', value: 155.8 },
+                { year: '2022', value: 165.2 },
+                { year: '2023', value: 175.6 },
+                { year: '2024', value: 184.4 },
+                { year: '2025', value: 195.8 },
+                { year: '2026', value: 208.3 }
+            ]
+        };
+
+        // Configurações dos gráficos
+        Chart.defaults.font.family = "'Segoe UI', sans-serif";
+        Chart.defaults.font.size = 12;
+
+        // Gráfico de Receita por Segmento
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mobile Games', 'Console Games', 'PC Games'],
+                datasets: [{
+                    data: [gameMarketData.revenue.mobile, gameMarketData.revenue.console, gameMarketData.revenue.pc],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.8)',
+                        'rgba(46, 204, 113, 0.8)',
+                        'rgba(155, 89, 182, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(46, 204, 113, 1)',
+                        'rgba(155, 89, 182, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value + 'B';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+
+        // Gráfico de Distribuição por Plataforma
+        const platformCtx = document.getElementById('platformChart').getContext('2d');
+        const platformChart = new Chart(platformCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Mobile', 'Console', 'PC'],
+                datasets: [{
+                    data: [gameMarketData.platforms.mobile, gameMarketData.platforms.console, gameMarketData.platforms.pc],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.8)',
+                        'rgba(46, 204, 113, 0.8)',
+                        'rgba(155, 89, 182, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(46, 204, 113, 1)',
+                        'rgba(155, 89, 182, 1)'
+                    ],
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+
+        // Gráfico de Projeção de Crescimento
+        const growthCtx = document.getElementById('growthChart').getContext('2d');
+        const growthChart = new Chart(growthCtx, {
+            type: 'line',
+            data: {
+                labels: gameMarketData.growth.map(item => item.year),
+                datasets: [{
+                    label: 'Receita Global',
+                    data: gameMarketData.growth.map(item => item.value),
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 3,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value + 'B';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+
+        // Animação de entrada
+        setTimeout(() => {
+            document.querySelector('.dashboard').style.opacity = '1';
+        }, 100);
+
+        // Animação dos KPIs
+        function animateKPIs() {
+            const kpiCards = document.querySelectorAll('.kpi-card');
+            kpiCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.6s ease';
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 200);
+            });
+        }
+
+        // Executar animações após carregamento
+        window.addEventListener('load', () => {
+            setTimeout(animateKPIs, 500);
+        });
+    </script>
+</body>
+</html>

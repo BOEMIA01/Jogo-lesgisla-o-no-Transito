@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardião da Legislação do Transporte</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: linear-gradient(180deg, #0f3460 0%, #16213e 50%, #1a1a2e 100%);
+        }
+
+        .game-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            border-bottom: 2px solid #4a90e2;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            color: #4a90e2;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .stat {
+            background: rgba(74, 144, 226, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #4a90e2;
+        }
+
+        .game-canvas {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 120px;
+            background: linear-gradient(180deg, #87ceeb 0%, #98d8e8 30%, #32cd32 70%, #228b22 100%);
+        }
+
+        @media (min-width: 769px) {
+            .game-canvas {
+                bottom: 0;
+            }
+        }
+
+        .player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #4a90e2;
+            border: 2px solid #ffffff;
+            border-radius: 5px;
+            transition: all 0.1s ease;
+            box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+        }
+
+        .player::before {
+            content: '🚛';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+        }
+
+        .platform {
+            position: absolute;
+            background: #8b4513;
+            border: 2px solid #654321;
+            border-radius: 3px;
+        }
+
+        .document {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #ffd700;
+            border: 2px solid #ffed4e;
+            border-radius: 5px;
+            animation: float 2s ease-in-out infinite;
+        }
+
+        .document::before {
+            content: '📄';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+        }
+
+        .obstacle {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #dc143c;
+            border: 2px solid #8b0000;
+            border-radius: 5px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .obstacle::before {
+            content: '⚠️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #4a90e2;
+            text-align: center;
+            z-index: 200;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #4a90e2;
+            text-align: center;
+            font-size: 12px;
+            display: none;
+        }
+
+        .mobile-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            border-top: 2px solid #4a90e2;
+        }
+
+        .d-pad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .d-pad-row {
+            display: flex;
+            gap: 5px;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 50px;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            border: 2px solid #ffffff;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, #357abd, #2968a3);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .jump-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 14px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .jump-btn:active {
+            background: linear-gradient(135deg, #ee5a52, #dc4b3c);
+        }
+
+        .invisible-btn {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 16px;
+            }
+            
+            .stats {
+                font-size: 12px;
+                gap: 10px;
+            }
+            
+            .document-info {
+                top: 70px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 11px;
+                padding: 10px;
+            }
+            
+            .message {
+                left: 10px;
+                right: 10px;
+                transform: translateY(-50%);
+                padding: 15px;
+            }
+            
+            .controls {
+                display: none;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-controls {
+                display: none;
+            }
+            .controls {
+                display: block;
+            }
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            border-top: 2px solid #4a90e2;
+        }
+
+        .credits {
+            margin-bottom: 5px;
+        }
+
+        .company {
+            color: #4a90e2;
+            font-weight: bold;
+        }
+
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #357abd;
+        }
+
+        .level-complete {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            border-color: #4caf50;
+        }
+
+        .document-info {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #4a90e2;
+            max-width: 300px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .law-title {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="title">GUARDIÃO DA LEGISLAÇÃO DO TRANSPORTE</div>
+            <div class="stats">
+                <div class="stat">Documentos: <span id="documents">0</span>/5</div>
+                <div class="stat">Nível: <span id="level">1</span></div>
+                <div class="stat">Vidas: <span id="lives">3</span></div>
+            </div>
+        </div>
+
+        <div class="game-canvas" id="gameCanvas">
+            <div class="player" id="player"></div>
+        </div>
+
+        <div class="document-info" id="documentInfo">
+            <div class="law-title">Lei Coletada:</div>
+            <div id="lawDescription">Colete documentos de legislação do transporte para aprender sobre as normas que regem o setor!</div>
+        </div>
+
+        <div class="controls">
+            <div><strong>CONTROLES:</strong></div>
+            <div>WASD ou Setas: Movimento | ESPAÇO: Pulo | R: Reiniciar</div>
+        </div>
+
+        <div class="mobile-controls">
+            <div class="d-pad">
+                <div class="d-pad-row">
+                    <div class="control-btn invisible-btn"></div>
+                    <div class="control-btn" id="upBtn">↑</div>
+                    <div class="control-btn invisible-btn"></div>
+                </div>
+                <div class="d-pad-row">
+                    <div class="control-btn" id="leftBtn">←</div>
+                    <div class="control-btn invisible-btn"></div>
+                    <div class="control-btn" id="rightBtn">→</div>
+                </div>
+            </div>
+            <div>
+                <div class="control-btn jump-btn" id="jumpBtn">PULO</div>
+            </div>
+        </div>
+
+        <div class="message" id="gameMessage">
+            <h2>Bem-vindo ao Guardião da Legislação!</h2>
+            <p>Sua missão é coletar documentos importantes sobre legislação do transporte enquanto evita obstáculos normativos.</p>
+            <p>Cada documento representa uma lei ou regulamentação fundamental do setor.</p>
+            <p><strong>Mobile:</strong> Use os botões na tela<br>
+            <strong>Desktop:</strong> WASD/Setas + Espaço para pular</p>
+            <button onclick="startGame()">INICIAR MISSÃO</button>
+        </div>
+
+        <div class="footer">
+            <div class="credits">
+                Desenvolvido por: <strong>Isaac e Pedro</strong> | 
+                <span class="company">SEST SENAT</span> - Serviço Social do Transporte e Serviço Nacional de Aprendizagem do Transporte
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameCanvas = document.getElementById('gameCanvas');
+        const player = document.getElementById('player');
+        const gameMessage = document.getElementById('gameMessage');
+        const documentInfo = document.getElementById('documentInfo');
+        const lawDescription = document.getElementById('lawDescription');
+
+        let gameState = {
+            playerX: 50,
+            playerY: 400,
+            velocityY: 0,
+            isJumping: false,
+            documents: 0,
+            level: 1,
+            lives: 3,
+            gameRunning: false,
+            platforms: [],
+            collectibles: [],
+            obstacles: []
+        };
+
+        const laws = [
+            {
+                title: "Código de Trânsito Brasileiro (Lei 9.503/97)",
+                description: "Estabelece as normas de conduta, infrações e penalidades para o trânsito em vias terrestres."
+            },
+            {
+                title: "Lei do Motorista Profissional (Lei 12.619/12)",
+                description: "Regulamenta a profissão de motorista profissional e suas condições de trabalho."
+            },
+            {
+                title: "ANTT - Resolução sobre Transporte Rodoviário",
+                description: "Normas da Agência Nacional de Transportes Terrestres para o setor rodoviário."
+            },
+            {
+                title: "Regulamentação de Cargas Perigosas",
+                description: "Normas específicas para o transporte seguro de materiais perigosos."
+            },
+            {
+                title: "Lei de Criação do SEST SENAT (Lei 8.706/93)",
+                description: "Institui o Serviço Social do Transporte e o Serviço Nacional de Aprendizagem do Transporte."
+            }
+        ];
+
+        const keys = {};
+        let mobileControls = {
+            left: false,
+            right: false,
+            up: false,
+            jump: false
+        };
+
+        // Controles de teclado
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+            if (e.code === 'KeyR') {
+                restartLevel();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Controles mobile
+        function setupMobileControls() {
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
+            const upBtn = document.getElementById('upBtn');
+            const jumpBtn = document.getElementById('jumpBtn');
+
+            // Prevenir scroll em mobile
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+
+            // Botão esquerda
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                mobileControls.left = true;
+            });
+            leftBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                mobileControls.left = false;
+            });
+
+            // Botão direita
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                mobileControls.right = true;
+            });
+            rightBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                mobileControls.right = false;
+            });
+
+            // Botão cima (não usado, mas mantido para interface completa)
+            upBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                mobileControls.up = true;
+            });
+            upBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                mobileControls.up = false;
+            });
+
+            // Botão de pulo
+            jumpBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                jump();
+            });
+
+            // Suporte para mouse também
+            leftBtn.addEventListener('mousedown', () => mobileControls.left = true);
+            leftBtn.addEventListener('mouseup', () => mobileControls.left = false);
+            leftBtn.addEventListener('mouseleave', () => mobileControls.left = false);
+
+            rightBtn.addEventListener('mousedown', () => mobileControls.right = true);
+            rightBtn.addEventListener('mouseup', () => mobileControls.right = false);
+            rightBtn.addEventListener('mouseleave', () => mobileControls.right = false);
+
+            jumpBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                jump();
+            });
+        }
+
+        function startGame() {
+            gameMessage.classList.remove('show');
+            gameState.gameRunning = true;
+            setupMobileControls();
+            generateLevel();
+            gameLoop();
+        }
+
+        function generateLevel() {
+            gameCanvas.innerHTML = '<div class="player" id="player"></div>';
+            
+            // Regenerar referência do player
+            const newPlayer = document.getElementById('player');
+            
+            gameState.platforms = [];
+            gameState.collectibles = [];
+            gameState.obstacles = [];
+
+            // Criar plataformas
+            for (let i = 0; i < 8; i++) {
+                const platform = document.createElement('div');
+                platform.className = 'platform';
+                const width = 100 + Math.random() * 100;
+                const height = 20;
+                const x = i * 150 + Math.random() * 50;
+                const y = 300 + Math.random() * 200;
+                
+                platform.style.width = width + 'px';
+                platform.style.height = height + 'px';
+                platform.style.left = x + 'px';
+                platform.style.top = y + 'px';
+                
+                gameCanvas.appendChild(platform);
+                gameState.platforms.push({element: platform, x, y, width, height});
+            }
+
+            // Criar documentos coletáveis
+            for (let i = 0; i < 5; i++) {
+                const doc = document.createElement('div');
+                doc.className = 'document';
+                doc.dataset.lawIndex = i;
+                const x = 100 + i * 200 + Math.random() * 100;
+                const y = 200 + Math.random() * 150;
+                
+                doc.style.left = x + 'px';
+                doc.style.top = y + 'px';
+                
+                gameCanvas.appendChild(doc);
+                gameState.collectibles.push({element: doc, x, y, collected: false, lawIndex: i});
+            }
+
+            // Criar obstáculos
+            for (let i = 0; i < 6; i++) {
+                const obstacle = document.createElement('div');
+                obstacle.className = 'obstacle';
+                const x = 150 + i * 180 + Math.random() * 80;
+                const y = 250 + Math.random() * 200;
+                
+                obstacle.style.left = x + 'px';
+                obstacle.style.top = y + 'px';
+                
+                gameCanvas.appendChild(obstacle);
+                gameState.obstacles.push({element: obstacle, x, y});
+            }
+
+            updatePlayer();
+        }
+
+        function updatePlayer() {
+            const playerElement = document.getElementById('player');
+            if (playerElement) {
+                playerElement.style.left = gameState.playerX + 'px';
+                playerElement.style.top = gameState.playerY + 'px';
+            }
+        }
+
+        function jump() {
+            if (!gameState.isJumping && gameState.gameRunning) {
+                gameState.velocityY = -15;
+                gameState.isJumping = true;
+            }
+        }
+
+        function gameLoop() {
+            if (!gameState.gameRunning) return;
+
+            // Movimento do jogador
+            if (keys['KeyA'] || keys['ArrowLeft'] || mobileControls.left) {
+                gameState.playerX = Math.max(0, gameState.playerX - 5);
+            }
+            if (keys['KeyD'] || keys['ArrowRight'] || mobileControls.right) {
+                gameState.playerX = Math.min(window.innerWidth - 40, gameState.playerX + 5);
+            }
+
+            // Física
+            gameState.velocityY += 0.8; // Gravidade
+            gameState.playerY += gameState.velocityY;
+
+            // Colisão com o chão
+            if (gameState.playerY > window.innerHeight - 150) {
+                gameState.playerY = window.innerHeight - 150;
+                gameState.velocityY = 0;
+                gameState.isJumping = false;
+            }
+
+            // Colisão com plataformas
+            gameState.platforms.forEach(platform => {
+                if (gameState.playerX < platform.x + platform.width &&
+                    gameState.playerX + 40 > platform.x &&
+                    gameState.playerY + 40 > platform.y &&
+                    gameState.playerY < platform.y + platform.height &&
+                    gameState.velocityY > 0) {
+                    
+                    gameState.playerY = platform.y - 40;
+                    gameState.velocityY = 0;
+                    gameState.isJumping = false;
+                }
+            });
+
+            // Colisão com documentos
+            gameState.collectibles.forEach(collectible => {
+                if (!collectible.collected &&
+                    gameState.playerX < collectible.x + 30 &&
+                    gameState.playerX + 40 > collectible.x &&
+                    gameState.playerY < collectible.y + 30 &&
+                    gameState.playerY + 40 > collectible.y) {
+                    
+                    collectible.collected = true;
+                    collectible.element.remove();
+                    gameState.documents++;
+                    
+                    // Mostrar informação da lei
+                    const law = laws[collectible.lawIndex];
+                    document.querySelector('.law-title').textContent = law.title;
+                    lawDescription.textContent = law.description;
+                    
+                    document.getElementById('documents').textContent = gameState.documents;
+                    
+                    if (gameState.documents >= 5) {
+                        levelComplete();
+                    }
+                }
+            });
+
+            // Colisão com obstáculos
+            gameState.obstacles.forEach(obstacle => {
+                if (gameState.playerX < obstacle.x + 30 &&
+                    gameState.playerX + 40 > obstacle.x &&
+                    gameState.playerY < obstacle.y + 30 &&
+                    gameState.playerY + 40 > obstacle.y) {
+                    
+                    takeDamage();
+                }
+            });
+
+            updatePlayer();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function takeDamage() {
+            gameState.lives--;
+            document.getElementById('lives').textContent = gameState.lives;
+            
+            if (gameState.lives <= 0) {
+                gameOver();
+            } else {
+                // Reposicionar jogador
+                gameState.playerX = 50;
+                gameState.playerY = 400;
+                gameState.velocityY = 0;
+                gameState.isJumping = false;
+            }
+        }
+
+        function levelComplete() {
+            gameState.gameRunning = false;
+            gameMessage.innerHTML = `
+                <h2 class="level-complete">NÍVEL ${gameState.level} CONCLUÍDO!</h2>
+                <p>Parabéns! Você coletou todos os documentos de legislação do transporte.</p>
+                <p>Conhecimento adquirido sobre as principais normas do setor.</p>
+                <button onclick="nextLevel()">PRÓXIMO NÍVEL</button>
+                <button onclick="restartGame()">REINICIAR JOGO</button>
+            `;
+            gameMessage.classList.add('show');
+        }
+
+        function nextLevel() {
+            gameState.level++;
+            gameState.documents = 0;
+            gameState.lives = 3;
+            gameState.playerX = 50;
+            gameState.playerY = 400;
+            gameState.velocityY = 0;
+            gameState.isJumping = false;
+            
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('documents').textContent = 0;
+            document.getElementById('lives').textContent = 3;
+            
+            startGame();
+        }
+
+        function gameOver() {
+            gameState.gameRunning = false;
+            gameMessage.innerHTML = `
+                <h2>MISSÃO FRACASSADA</h2>
+                <p>Você não conseguiu coletar todos os documentos de legislação.</p>
+                <p>O conhecimento sobre as normas do transporte é fundamental para um profissional qualificado.</p>
+                <button onclick="restartGame()">TENTAR NOVAMENTE</button>
+            `;
+            gameMessage.classList.add('show');
+        }
+
+        function restartLevel() {
+            gameState.playerX = 50;
+            gameState.playerY = 400;
+            gameState.velocityY = 0;
+            gameState.isJumping = false;
+        }
+
+        function restartGame() {
+            gameState = {
+                playerX: 50,
+                playerY: 400,
+                velocityY: 0,
+                isJumping: false,
+                documents: 0,
+                level: 1,
+                lives: 3,
+                gameRunning: false,
+                platforms: [],
+                collectibles: [],
+                obstacles: []
+            };
+            
+            document.getElementById('level').textContent = 1;
+            document.getElementById('documents').textContent = 0;
+            document.getElementById('lives').textContent = 3;
+            
+            startGame();
+        }
+
+        // Mostrar mensagem inicial
+        gameMessage.classList.add('show');
+    </script>
+</body>
+</html>
